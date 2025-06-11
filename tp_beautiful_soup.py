@@ -3,6 +3,7 @@
 #  3 . Enter in each artical, scrap and return one object corresponding to the artical.
 #  4 . Save the data in MongoDB
 
+import unicodedata
 import requests
 from bs4 import BeautifulSoup
 from pymongo import MongoClient
@@ -57,7 +58,7 @@ def fetch_articles(url):
         return []
 
 # To get urls of the articles of the first five pages
-for page in range(1, 6):  # Scrape first 5 pages
+for page in range(1, 2):  # Scrape first pages (you can scrape how many you want)
     url = f"{base_url}{page}/"
     all_articles = fetch_articles(url)
 
@@ -88,10 +89,11 @@ def fetch_article(url):
                       ) if main_tag else None
         # title
         h1_title = header.find('h1').get_text(strip=True) if header else None
-        title = h1_title.replace('&nbsp;', ' ') if header else None
+        title = unicodedata.normalize('NFKC', h1_title)
         # summary
         div_summary = header.find('div', class_='article-hat') if header else None
-        summary = div_summary.find('p').get_text(strip=True) if div_summary else None
+        summary_ = div_summary.find('p').get_text(strip=True) if div_summary else None
+        summary = unicodedata.normalize('NFKC', summary_)
         # author
         span_author = header.find('span', class_='byline') if header else None
         a_tag = span_author.find('a') if span_author else None
@@ -103,8 +105,8 @@ def fetch_article(url):
         # thumbnail_img
         thumbnail_img = None
         figure_img = header.find('figure', class_='article-hat-img') if header else None 
-        a_img = figure_img.find('a') if figure_img else None
-        img_tag_ = a_img.find('img', class_='mx-auto') if a_img else None 
+        # a_img = figure_img.find('a') if figure_img else None (Some figures don't have <a> don't need)
+        img_tag_ = figure_img.find('img', class_='mx-auto') if figure_img else None 
         thumbnail_img = img_tag_['src'] if img_tag_ else None
 
         # Find the main content container
@@ -113,18 +115,43 @@ def fetch_article(url):
         # Initialize lists to store the extracted content
         headings = []
         paragraphs = []
-
+        images = []
+        subcatageories = []
+        image = None
         if content_div:
         # Extract all h2, h3, and p elements
-            for element in content_div.find_all(['h2', 'p']):
-                if element.name in ['h2']:
+            for element in content_div.find_all(['h2', 'h3', 'p', 'figure']):
+                if element.name in ['h2', 'h3']:
                     headings.append({
                  'level': element.name,
-                    'text': element.get_text(strip=True)
+                    'text': unicodedata.normalize('NFKC', element.get_text(strip=True))
                 })
                 elif element.name == 'p':
-                    paragraphs.append(element.get_text(strip=True))
-                 
+                    paragraphs.append(unicodedata.normalize('NFKC', element.get_text(strip=True)))
+                elif element.name == 'figure':
+                    figure_img = content_div.find('figure', class_='wp-caption') if content_div else None 
+                    img_tag_ = figure_img.find('img') if figure_img else None                    
+                    image = img_tag_['data-lazy-src'] if img_tag_ and img_tag_.has_attr('data-lazy-src') else None
+                    images.append({
+                    'image' : image                    
+                    })
+
+        # Search sub categories
+        cats_list_div = main_tag.find('div', class_='article-terms')  
+        if cats_list_div:
+        # Find all tags under ul with class "tags-list"
+            tags = cats_list_div.select("ul.tags-list li a.post-tags")
+
+            for tag in tags:
+                text = tag.text.strip()
+                href = tag['href']
+                data_tag = tag.get('data-tag', '')
+                title = tag.get('title', '')
+                subcatageories.append({
+                    'tag': text, 
+                    'href' : href, 
+                })
+            # print(f"Tag: {text}, href: {href}, data-tag: {data_tag}, title: {title}")      
 
         articles_data.append({
                 'url': url,
@@ -134,7 +161,9 @@ def fetch_article(url):
                 'date' : date,
                 'thumbnail_img' : thumbnail_img,                
                 'headings' : headings,
-                'paragraphs' : paragraphs
+                'paragraphs' : paragraphs,
+                'images' : images,
+                'subcatageories' : subcatageories
             })
         return articles_data
 
