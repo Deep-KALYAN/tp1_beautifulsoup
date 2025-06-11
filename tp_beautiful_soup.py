@@ -5,7 +5,12 @@
 
 import requests
 from bs4 import BeautifulSoup
-import time
+from pymongo import MongoClient
+
+# Connexion MongoDB
+client = MongoClient("mongodb://localhost:27017/")
+db = client["blog_scraper"]
+collection = db["articles"]
 
 base_url = "https://www.blogdumoderateur.com/web/page/"
 
@@ -111,8 +116,8 @@ def fetch_article(url):
 
         if content_div:
         # Extract all h2, h3, and p elements
-            for element in content_div.find_all(['h2', 'h3', 'p']):
-                if element.name in ['h2', 'h3']:
+            for element in content_div.find_all(['h2', 'p']):
+                if element.name in ['h2']:
                     headings.append({
                  'level': element.name,
                     'text': element.get_text(strip=True)
@@ -146,6 +151,7 @@ for i, article in enumerate(all_articles, 1):
     
 for i, article in enumerate(dataofarticals, 1):
         print(f"\nArticle {i}:")
-        for key, value in article.items():
+        collection.insert_one(article)
+        for key, value in article.items():            
             print(f"{key.capitalize()}: {value}")
     # "C:\Users\Kalyan\Desktop\MscBigDataAI\IPSSI\9th W React\tp_beautiful_soup.py"
