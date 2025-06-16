@@ -7,7 +7,7 @@ from scrapy.loader import ItemLoader
 class EncheresSpider(scrapy.Spider) :
     name = "v1"
     start_urls = [
-        "https://www.car-encheres.fr/"
+        "https://www.car-encheres.fr/",
     ]
 
     
@@ -128,13 +128,53 @@ class EncheresSpider(scrapy.Spider) :
             # print(f"Image_url: {image_url}")
             # print(f"Product_url: {product_url}")
             # print("-" * 50)
+            if product_url:
+                # yield loader.load_item()
+                yield response.follow(
+                        product_url,
+                        callback=self.parse_annonce,
+                        meta={'loader': loader}
+                        )
+                # yield response.follow(product_url, callback=self.parse_annonce)
+        next_page = response.css('ul.page-numbers a.next::attr(href)').get()
+        if next_page:
+            yield response.follow(next_page, callback=self.parse_cars, meta={'loader': loader})
+    #     next_page = response.css('ul.page-numbers a.next::attr(href)').get()
+    #     if next_page:
+    #         yield response.follow(next_page, callback=self.parse)
 
-            yield loader.load_item()
+    def parse_annonce(self, response):
+        if response.status == 500:
+            self.logger.warning(f"Skipping URL due to 500: {response.url}")
+            return
+        loader = response.meta['loader']
+        if not loader:
+            self.logger.error("Missing loader in meta")
+            return
+        
+        mec = response.css('tr.woocommerce-product-attributes-item--attribute_datemec td p::text').get() 
+        couleur = response.css('tr.woocommerce-product-attributes-item--attribute_pa_couleur td p a::text').get() 
+
+        loader.add_value('mec', mec)
+        loader.add_value('couleur', couleur)
+        # update({
+        #     "mec": mec or None,
+        #     "couleur": couleur or None
+        # })
+
+        yield loader.load_item()
+        
 
 
 
-        # yield from response.follow_all(css="ul.page-numbers a", callback=self.parse)
-        # # pagination support
+
+        # next_page = response.css('ul.page-numbers a.next::attr(href)').get()
+        # if next_page:
+        #     yield response.follow(next_page, callback=self.parse)
+        # Handle pagination - PROPERLY get URLs from links
+        # OPTION 1: Follow all numbered pages (recommended)
+        # page_links = response.css('ul.page-numbers a.page-numbers:not(.next)::attr(href)').getall()
+        # yield from response.follow_all(page_links, callback=self.parse)
         # next_page = response.css('a.next::attr(href)').get()
         # if next_page:
         #     # yield

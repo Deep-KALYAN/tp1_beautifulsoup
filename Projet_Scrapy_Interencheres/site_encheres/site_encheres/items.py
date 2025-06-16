@@ -15,3 +15,5 @@ class V1Item(scrapy.Item):
     price = scrapy.Field()
     image_url = scrapy.Field()
     product_url = scrapy.Field()
+    mec = scrapy.Field()
+    couleur = scrapy.Field()
