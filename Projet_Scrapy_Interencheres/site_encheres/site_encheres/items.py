@@ -7,6 +7,7 @@ import scrapy
 
 
 class V1Item(scrapy.Item):
+    # title = scrapy.Field()
     brand = scrapy.Field()
     model = scrapy.Field()
     fuel = scrapy.Field()

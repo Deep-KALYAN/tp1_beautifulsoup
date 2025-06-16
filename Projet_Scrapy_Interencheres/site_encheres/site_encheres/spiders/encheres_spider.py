@@ -27,29 +27,39 @@ class EncheresSpider(scrapy.Spider) :
                 # loader.add_css('id', id)
 
                 title = product.css('h2.woocommerce-loop-product__title')
-                loader.add_css('title', 'h2.woocommerce-loop-product__title')
+                # loader.add_css('title', 'h2.woocommerce-loop-product__title')
+                # print(f"title: {title}")
 
                 brand = title.css('span.text-uppercase::text').get('').strip()
                 loader.add_css('brand', 'span.text-uppercase::text')
+                print(f"Brand: {brand}")
 
                 model = title.xpath('./text()[normalize-space()]').get('').strip()
-                loader.add_css('model', './text()[normalize-space()]')
+                loader.add_value('model', model)
+                # loader.add_css('model', './text()[normalize-space()]')
+                print(f"Model: {model}")
 
                 # Extract fuel type 
                 fuel = product.xpath(
                     './/li[contains(., "Carburant")]/text()[normalize-space()]'
                 ).get('').replace('Carburant', '').strip()
-                loader.add_css('fuel', './/li[contains(., "Carburant")]/text()[normalize-space()]')
+                loader.add_value('fuel', fuel)
+                # loader.add_css('fuel', './/li[contains(., "Carburant")]/text()[normalize-space()]')
+                print(f"Fuel: {fuel}")
 
                 # Extract mileage 
                 mileage = product.xpath(
                     './/li[contains(., "Kilométrage")]/text()[normalize-space()]'
                 ).get('').replace('Kilométrage', '').strip()
-                loader.add_css('mileage',  './/li[contains(., "Kilométrage")]/text()[normalize-space()]')
-                
+                loader.add_value('mileage', mileage)
+                # loader.add_css('mileage',  './/li[contains(., "Kilométrage")]/text()[normalize-space()]')
+                print(f"Mileage: {mileage}")
+
                 # Extract price
                 price = product.css('span.price bdi::text').get('').strip()
-                loader.add_css('price', 'span.price bdi::text')
+                # loader.add_css('price', 'span.price bdi::text')
+                loader.add_value('price', price)
+                print(f"Price: {price}")
 
                 # Extract image URL
                 # Get the first <a> tag
@@ -72,10 +82,16 @@ class EncheresSpider(scrapy.Spider) :
                         image_url = src
                         break
 
-                loader.add_css('image_url', image_url)
+                # loader.add_css('image_url', image_url)
+                loader.add_value('image_url', image_url)
+                print(f"Image_url: {image_url}")
+
                 # Extract product URL
                 product_url = product.css('a.woocommerce-LoopProduct-link::attr(href)').get('')
-                loader.add_css('product_url', 'a.woocommerce-LoopProduct-link::attr(href)')
+                # loader.add_css('product_url', 'a.woocommerce-LoopProduct-link::attr(href)')
+                loader.add_value('product_url', product_url)
+                print(f"Product_url: {product_url}")
+
                 # yield {
                 #     'id': str(i),  # Ensure id is string if needed
                 #     'image_url': image_url if image_url else None,
@@ -101,15 +117,17 @@ class EncheresSpider(scrapy.Spider) :
                 self.logger.error(f"Error processing product #{i}: {str(e)}")
                 continue
                        # Print extracted information
-            # print(f"Id: {i}")           
-            print(f"Brand: {brand}")
-            print(f"Model: {model}")
-            print(f"Fuel: {fuel}")
-            print(f"Mileage: {mileage}")
-            print(f"Price: {price}")
-            print(f"Image_url: {image_url}")
-            print(f"Product_url: {product_url}")
-            print("-" * 50)
+            # print(f"Id: {i}")     
+
+            # print(f"title: {title}")      
+            # print(f"Brand: {brand}")
+            # print(f"Model: {model}")
+            # print(f"Fuel: {fuel}")
+            # print(f"Mileage: {mileage}")
+            # print(f"Price: {price}")
+            # print(f"Image_url: {image_url}")
+            # print(f"Product_url: {product_url}")
+            # print("-" * 50)
 
             yield loader.load_item()
 
